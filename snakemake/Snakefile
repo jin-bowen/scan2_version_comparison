@@ -1,0 +1,41 @@
+# vim: syntax=python
+
+wildcard_constraints:
+    chr='|'.join(str(x) for x in config['chrs']),
+    gatk_chunk="\d+",
+    gatk_mmq="\d+",
+    phaser="shapeit|eagle",
+    muttype='snv|indel',
+    passtype='pass|rescue'
+
+
+if config['analysis'] == 'call_mutations':
+    include: "snakefile.call_mutations"
+    rule call_mutations:
+        input:
+            expand("call_mutations/{sample}/scan2_object.rda",
+                sample=config['sc_bams'].keys())
+
+if config['analysis'] == 'makepanel':
+    include: "snakefile.makepanel"
+    rule makepanel:
+        input:
+            "panel/panel.tab.gz"
+
+if config['analysis'] == 'rescue':
+    include: "snakefile.rescue"
+    rule rescue_batch:
+        input:
+            "rescued_muts.txt",
+            "sig_homogeneity_tests.txt",
+            expand("objects/{sample}_scan2_object_rescue.rda",
+                sample=config['scan2_objects'].keys())
+
+if config['analysis'] == 'permtool':
+    include: "snakefile.permtool"
+    rule permtool:
+        input:
+            expand("perms_{muttype}_{passtype}.rda",
+                muttype=[ 'snv', 'indel' ], passtype=[ 'pass', 'rescue' ]),
+            expand("seedinfo_{muttype}_{passtype}.rda",
+                muttype=[ 'snv', 'indel' ], passtype=[ 'pass', 'rescue' ])

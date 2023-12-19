@@ -1,0 +1,102 @@
+# vim: syntax=python
+
+import yaml
+
+# Read in all of the SCAN2 config files and create a sample -> config variable mapping
+yaml_by_sample = {}
+for sample, path in config['permtool_config_map'].items():
+    with open(path) as cf: 
+        yaml_by_sample[sample] = yaml.load(cf, Loader=yaml.FullLoader)
+
+
+rule combine_permutations:
+    input:
+        rdas=expand("perms_by_sample/{sample}/{{muttype}}_{{passtype}}.rda",
+            sample=yaml_by_sample.keys())
+    output:
+        perms="perms_{muttype}_{passtype}.rda",
+        seeds="seedinfo_{muttype}_{passtype}.rda"
+    log:
+        "combine_permutations_{muttype}_{passtype}.log"
+    benchmark:
+        "benchmark_combine_permutations_{muttype}_{passtype}.txt"
+    params:
+        genome=config['genome']
+    threads: config['permtool_combine_permutations_n_cores']
+    resources:
+        mem=lambda wildcards, input, threads: 6000*threads
+    shell:
+        """
+        {config[scripts]}/combine_permutations.R \
+            {params.genome} \
+            {output.perms} \
+            {output.seeds} \
+            {threads} \
+            {input.rdas} >& {log}
+        """
+
+
+rule make_permutations:
+    input:
+        muttab=config['permtool_muts'],
+        bed="callable_regions/{sample}_{muttype}.bed"
+    output:
+        rda="perms_by_sample/{sample}/{muttype}_{passtype}.rda"
+    log:
+        "perms_by_sample/{sample}/{muttype}_{passtype}.log"
+    benchmark:
+        "perms_by_sample/{sample}/benchmark_{muttype}_{passtype}.txt"
+    params:
+        sample="{sample}",
+        genome=config['genome'],
+        muttype="{muttype}",
+        passtype="{passtype}"
+    threads: config['permtool_make_permutations_n_cores']
+    resources:
+        mem=lambda wildcards, input, threads: 4000*threads
+    shell:
+        """
+        {config[scripts]}/make_permutations.R \
+            {input.muttab} \
+            {params.sample} \
+            {input.bed} \
+            {params.genome} \
+            {config[permtool_bedtools_genome_file]} \
+            {params.muttype} \
+            {params.passtype} \
+            {config[permtool_n_permutations]} \
+            {output.rda} \
+            {threads} >& {log}
+        """
+
+
+rule make_callable_bed:
+    input:
+        lambda wildcards: config['permtool_matrix_map'][wildcards.sample]
+    output:
+        "callable_regions/{sample}_{muttype}.bed"
+    log:
+        "callable_regions/{sample}_{muttype}.log"
+    benchmark:
+        "callable_regions/benchmark_{sample}_{muttype}.txt"
+    params:
+        sample="{sample}",
+        genome=config['genome'],
+        bulk_sample=lambda wildcards: yaml_by_sample[wildcards.sample]['bulk_sample'],
+        min_sc_dp=lambda wildcards: yaml_by_sample[wildcards.sample][wildcards.muttype + '_min_sc_dp'],
+        min_bulk_dp=lambda wildcards: yaml_by_sample[wildcards.sample][wildcards.muttype + '_min_bulk_dp'],
+    threads: config['permtool_callable_bed_n_cores']
+    resources:
+        mem=lambda wildcards, input, threads: 1500*threads
+    shell:
+        """
+        {config[scripts]}/make_callable_regions_bed.R \
+            {input} \
+            {params.sample} \
+            {params.bulk_sample} \
+            {params.genome} \
+            {params.min_sc_dp} \
+            {params.min_bulk_dp} \
+            {output} \
+            {threads} >& {log}
+        """

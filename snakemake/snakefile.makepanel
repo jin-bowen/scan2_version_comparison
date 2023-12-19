@@ -1,0 +1,42 @@
+# vim: syntax=python
+
+include: "snakefile.select_gatk"
+
+rule vcf_to_tab:
+    input:
+        "gatk/hc_raw.mmq60.vcf"
+    output:
+        tabgz="panel/hc_raw.mmq60.tab.gz",
+        tabidx="panel/hc_raw.mmq60.tab.gz.tbi",
+    resources:
+        mem=1000
+    benchmark:
+        "gatk/benchmark_vcf_to_tab.txt"
+    shell:
+        """
+        {config[scripts]}/totab.panel.sh {input} /dev/stdout | bgzip -c > {output.tabgz}
+        tabix -p vcf -S 1 {output.tabgz}
+        """
+
+
+rule process_tab:
+    input:
+        tab="panel/hc_raw.mmq60.tab.gz",
+        tabgz="panel/hc_raw.mmq60.tab.gz.tbi",
+        meta=lambda wildcards: config['makepanel_metadata']
+    output:
+        tab=temp("panel/panel.tab"),
+        tabgz="panel/panel.tab.gz",
+        tabix="panel/panel.tab.gz.tbi"
+    params:
+        genome=config['genome']
+    benchmark:
+        "panel/benchmark_make_panel.txt"
+    threads: config['makepanel_n_cores']
+    resources:
+        mem=1500*config['makepanel_n_cores']
+    shell:
+        """
+        {config[scripts]}/make_panel.R \
+            {input.tab} {input.meta} {output.tab} {params.genome} {threads}
+        """

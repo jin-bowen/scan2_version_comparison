@@ -1,0 +1,76 @@
+# vim: syntax=python
+
+# These should probably be converted to subworkflows at some point.
+# For now, just for organizing rules into manageably-sized files.
+include: "snakefile.select_gatk"
+include: "snakefile.depth_profile"
+include: "snakefile.phasing"
+include: "snakefile.cigars"
+include: "snakefile.integrated_table"
+
+if config['abmodel_chunk_strategy']:
+    include: "snakefile.abmodel_chunked"
+else:
+    include: "snakefile.abmodel_multithreaded"
+
+# Use the new SCAN2 R object
+include: "snakefile.genotype"
+
+
+wildcard_constraints:
+    chr='|'.join(str(x) for x in config['chrs']),
+    gatk_chunk="\d+",
+    gatk_mmq="\d+",
+    phaser="shapeit|eagle"
+
+if config['gatk_vcf'] is not None:
+    # Contains a single rule that overrides gatk_gather for mmq60
+    include: "snakefile.gatk_user_vcf"
+
+
+# Determine the analyses to run, depending on which options
+# were selected by the user.
+def determine_pipeline_output(wildcards):
+    prf = ''
+    d = dict()
+
+    # Somatic indels and somatic SNVs
+    d['indel_somatic_genotypes'] = expand("call_mutations/{sample}/scan2_object.rda",
+        sample=config['sc_bams'].keys())
+
+    # Mosaic SNVs
+    if config['analyze_mosaic_snvs']:
+        print("adding mosaic SNVs to schedule")
+        d['mosaic_genotypes'] = expand("mosaic_snv/{sample}/somatic_genotypes.rda",
+            sample=config['sc_bams'].keys())
+
+    return d
+
+
+rule all:
+    input:
+        unpack(determine_pipeline_output)
+
+
+rule gatkvcf_to_tab:
+    input:
+        "gatk/hc_raw.mmq{gatk_mmq}.vcf"
+    output:
+        vcf="call_mutations/hc.mmq{gatk_mmq}.exnonvar_biallelic_bulkcalled.vcf",
+        tab="call_mutations/mmq{gatk_mmq}.tab.gz",
+        idx="call_mutations/mmq{gatk_mmq}.tab.gz.tbi"
+    benchmark:
+        "call_mutations/benchmark_gatkvcf_to_tab_mmq{gatk_mmq}.txt"
+    resources:
+        mem=4000
+    shell:
+        "gatk SelectVariants"
+        "   --java-options '-Xmx3G -Xms3G'"
+        "   -R {config[ref]}"
+        "   -V {input}"
+        "   --restrict-alleles-to BIALLELIC"
+        "   --exclude-non-variants"
+        "   -select 'vc.getGenotype(\"{config[bulk_sample]}\").isCalled()'"
+        "   -O {output.vcf} ; "
+        "{config[scripts]}/totab.sh {output.vcf} /dev/stdout | bgzip -c > {output.tab} ; "
+        "tabix -p vcf -S 1 {output.tab}"
