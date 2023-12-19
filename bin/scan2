@@ -67,7 +67,7 @@ scan2_param_defaults = {
     'phaser': 'shapeit',
     'shapeit_refpanel': None,  # a directory, so readable_file fails
     'cross_sample_panel': None, # must be readable IF specified, but pipeline should run without it too
-    'scripts': '/n/data1/bch/genetics/lee/shulin/softwares/anaconda3/envs/scan2/lib/scan2',  # also a directory
+    'scripts': '/home/yh174/miniconda3/envs/scan2_new/lib/scan2',  # also a directory
     'chr_prefix': '',          # be nice to remove this; requires snakefile changes
     'bam_map': {},             # maps sample name -> bam path
     'permtool_config_map': {},
@@ -81,7 +81,7 @@ scan2_param_defaults = {
 # Unlike params, all files listed here must be readable upon a call
 # to validate() or run().
 scan2_file_defaults = {
-    'snakefile': '/n/data1/bch/genetics/lee/shulin/softwares/anaconda3/envs/scan2/lib/scan2/Snakefile',
+    'snakefile': '/home/yh174/miniconda3/envs/scan2_new/lib/scan2/Snakefile',
     'ref': None,
     'dbsnp': None,
     'bams': {},         # miscellaneous BAMs; not genotyped as single cells
@@ -759,7 +759,7 @@ if __name__ == "__main__":
         type=str,
         help='PATH containing the SCAN2 analysis. Required for all subcommands.')
     ap.add_argument('--snakefile', metavar='PATH', type=str,
-        default='/n/data1/bch/genetics/lee/shulin/softwares/anaconda3/envs/scan2/lib/scan2/Snakefile',
+        default='/home/yh174/miniconda3/envs/scan2_new/lib/scan2/Snakefile',
         help='Path to the main Snakefile.  Unlikely to be necessary for standard use.')
     subparsers = ap.add_subparsers(dest='subcommand')
 
@@ -794,7 +794,7 @@ if __name__ == "__main__":
     config_parser.add_argument('--verbose', action='store_true', default=False,
         help='Print detailed list of all configuration changes.')
     config_parser.add_argument('--scripts', metavar='PATH',
-        default='/n/data1/bch/genetics/lee/shulin/softwares/anaconda3/envs/scan2/lib/scan2',
+        default='/home/yh174/miniconda3/envs/scan2_new/lib/scan2',
         help='Path to SCAN2 script files.  Usually points to an installed '
             'set of files.')
     config_parser.add_argument('--gatk', default='gatk3_joint',

@@ -71,11 +71,11 @@ rule callable_region_scatter:
         "depth_profile/gatk_depthofcoverage/benchmark_depthofcoverage_chunk{gatk_chunk}.txt"
     threads: 1
     resources:
-        mem=6000
+        mem=2000
     shell:
         """
         gatk DepthOfCoverage \
-            --java-options '-Xmx5G -Xms5G' \
+            --java-options '-Xmx3G -Xms3G' \
             -R {config[ref]} \
             {params.bams} \
             {params.regionflag} \

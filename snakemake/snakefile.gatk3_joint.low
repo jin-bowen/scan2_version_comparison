@@ -31,7 +31,7 @@ rule gatk_gather:
         "gatk/gather_benchmark.mmq{gatk_mmq}.tsv"
     shell:
         "gatk3 org.broadinstitute.gatk.tools.CatVariants"
-        "    -Xmx3G -Xms3G"
+        "    -Xmx4G -Xms4G"
         "    --arg_file {input.argfile}"
         "    -R {config[ref]}"
         "    -out {output.vcf}"
@@ -49,11 +49,11 @@ rule gatk_scatter:
             "-L " + config['gatk_regions'][int(wildcards.gatk_chunk) - 1],
         mmq="{gatk_mmq}"
     resources:
-        mem=20000
+        mem=2000
     benchmark:
         "gatk/scatter_benchmark.mmq{gatk_mmq}_chunk{gatk_chunk}.tsv"
     shell:
-        "gatk3 -Xmx16G -Xms16G"
+        "gatk3 -Xmx3G -Xms3G"
         "    -T HaplotypeCaller"
         "    -R {config[ref]}"
         "    --dontUseSoftClippedBases -l INFO"

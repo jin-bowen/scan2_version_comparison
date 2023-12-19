@@ -80,7 +80,7 @@ rule gatk_scatter:
         "gatk/{sample}/scatter_benchmark.mmq{gatk_mmq}_chunk{gatk_chunk}.tsv"
     shell:
         "gatk HaplotypeCaller"
-        "    --java-options '-Xmx5000M -Xms5000M'"
+        "    --java-options '-Xmx3500M -Xms3500M'"
         "    --dont-use-soft-clipped-bases"
         "    --dbsnp {config[dbsnp]}"
         "    --minimum-mapping-quality {params.mmq}"

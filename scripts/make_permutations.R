@@ -59,6 +59,7 @@ if (passtype != 'pass' & passtype != 'rescue')
 if (file.exists(out.rda))
     stop(paste('output file', out.rda, 'already exists, please delete it first'))
 
+
 suppressMessages(library(scan2))
 suppressMessages(library(future))
 suppressMessages(library(progressr))
