@@ -42,18 +42,19 @@ rule gatk_scatter:
     input:
         bam=expand("{bam}", bam=config['bam_map'].values()),
     output:
-        vcf="gatk/hc_raw.mmq{gatk_mmq}_chunk{gatk_chunk}.vcf"
+        vcf=temp("gatk/hc_raw.mmq{gatk_mmq}_chunk{gatk_chunk}.vcf"),
+        vcfidx=temp("gatk/hc_raw.mmq{gatk_mmq}_chunk{gatk_chunk}.vcf.idx")
     params:
         bamlist=expand("-I {bam}", bam=config['bam_map'].values()),
         regionflag=lambda wildcards:
             "-L " + config['gatk_regions'][int(wildcards.gatk_chunk) - 1],
         mmq="{gatk_mmq}"
     resources:
-        mem=20000
+        mem=10000
     benchmark:
         "gatk/scatter_benchmark.mmq{gatk_mmq}_chunk{gatk_chunk}.tsv"
     shell:
-        "gatk3 -Xmx16G -Xms16G"
+        "gatk3 -Xmx3500M -Xms3500M"
         "    -T HaplotypeCaller"
         "    -R {config[ref]}"
         "    --dontUseSoftClippedBases -l INFO"
